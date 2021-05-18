@@ -10,8 +10,6 @@ import subprocess
 import time
 import copy
 import xml.etree.ElementTree as ET
-import base64
-import yaml
 import hashlib
 from pysmx.SM2 import generate_keypair
 from pysmx.SM3 import hash_msg
@@ -128,6 +126,13 @@ def gen_net_config_list(peers, enable_tls):
         }
         net_config_list.append(net_config)
     return net_config_list
+
+
+def gen_network_key(node_path):
+    network_key = '0x' + os.urandom(32).hex()
+    path = os.path.join(node_path, 'network_key')
+    with open(path, 'wt') as stream:
+        stream.write(network_key)
 
 
 def need_directory(path):
@@ -411,6 +416,11 @@ def gen_sync_configs(work_dir, sync_peers, chain_name):
 def run_subcmd_local_cluster(args):
     work_dir = args.work_dir
 
+    chain_path = os.path.join(work_dir, '{}'.format(args.chain_name))
+    if os.path.exists(chain_path):
+        print('chain {} already existed!'.format(args.chain_name))
+        sys.exit(0)
+
     if not args.kms_password:
         print('kms_password must be set!')
         sys.exit(1)
@@ -437,6 +447,8 @@ def run_subcmd_local_cluster(args):
         net_config_file = os.path.join(node_path, 'network-config.toml')
         with open(net_config_file, 'wt') as stream:
             toml.dump(net_config, stream)
+        # generate network key
+        gen_network_key(node_path)
         # generate log config
         gen_log4rs_config(node_path, args.log_level, args.is_stdout)
         gen_consensus_config(node_path, index)
@@ -459,6 +471,7 @@ def run_subcmd_local_cluster(args):
     print("sync_peers:", sync_peers)
     gen_sync_configs(work_dir, sync_peers, args.chain_name)
 
+    os.makedirs(chain_path)
     print("Done!!!")
 
 

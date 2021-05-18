@@ -71,35 +71,36 @@ Done!!!
 ```
 $ cd /tmp/test 
 $ ll
-drwxr-xr-x 2 rink rink 120  5月 18 16:36 0x1c71e671442ca68fa4d40f5199546b9e2f9dfd44
-drwxr-xr-x 2 rink rink 120  5月 18 16:36 0x6d8c895d9da774217157e102b10ee6e13689d590
-drwxr-xr-x 2 rink rink 120  5月 18 16:36 0xbea2a30bbd10a778f93ccc1be246d2cd445abfc0
-drwxr-xr-x 2 rink rink 120  5月 18 16:36 0xd3da2617cf0b01fedbbcf97e9d1b74458ff8dd2d
-drwx------ 2 rink rink  80  5月 18 16:36 H3NJMD6-OFWXT4L-FYC7D3K-RZB7HMO-OB3QGNQ-5ZFXRYU-AN6ZXS2-CFW6TQU
-drwxr-xr-x 4 rink rink 360  5月 18 16:36 test-chain-0
-drwxr-xr-x 4 rink rink 360  5月 18 16:36 test-chain-1
-drwxr-xr-x 4 rink rink 360  5月 18 16:36 test-chain-2
-drwx------ 2 rink rink  80  5月 18 16:36 XJJVALM-POA6V7N-4TIMJSV-66HWSWA-DOMDKHR-VD7ZKJD-RZYP3X4-WSMT6AZ
-drwx------ 2 rink rink  80  5月 18 16:36 YNZ6QXB-GJFGQSA-525YHM5-5FWHRQ5-G2U7GJD-MJKXOR6-4ELKWNL-ZCKUXQG
+drwxr-xr-x 2 rink rink 120  5月 18 18:08 0x06b9de6e9a7aea05f3e01060f9b7aa0594323596
+drwxr-xr-x 2 rink rink 120  5月 18 18:08 0x54cc97ca9520fe0b431b568d8abf96cf4933741a
+drwxr-xr-x 2 rink rink 120  5月 18 18:08 0x66029c9e0f56eabca666414daa9905faa8545240
+drwxr-xr-x 2 rink rink 120  5月 18 18:08 0x6f12e2a3f7ae50c24a9c5108e4fba23d31d7f135
+drwx------ 2 rink rink  80  5月 18 18:08 A4ZRFKB-QLREYUZ-ESHC6RV-HSFL6DB-APCTTM7-7GQIYYY-H227JGS-2M36HAA
+drwx------ 2 rink rink  80  5月 18 18:08 DF7EYVK-6AHD5X7-NYBYNSQ-M3VTVRB-JFBTE6B-Y67SD4B-M7IDZHX-NEEW6AQ
+drwx------ 2 rink rink  80  5月 18 18:08 Q47RRDO-MCOMD3N-XC5LSO5-67HIPRG-SROQKV2-QY7X45I-CVEHJ5I-B4LYFA7
+drwxr-xr-x 2 rink rink  40  5月 18 18:08 test-chain
+drwxr-xr-x 4 rink rink 380  5月 18 18:08 test-chain-0
+drwxr-xr-x 4 rink rink 380  5月 18 18:08 test-chain-1
+drwxr-xr-x 4 rink rink 380  5月 18 18:08 test-chain-2
 
 $ ll test-chain-0 
-drwxr-xr-x 2 rink rink 100  5月 18 16:36 config
--rw-r--r-- 1 rink rink  57  5月 18 16:36 consensus-config.toml
--rw-r--r-- 1 rink rink 838  5月 18 16:36 consensus-log4rs.yaml
--rw-r--r-- 1 rink rink 127  5月 18 16:36 controller-config.toml
--rw-r--r-- 1 rink rink 840  5月 18 16:36 controller-log4rs.yaml
--rw-r--r-- 1 rink rink 836  5月 18 16:36 executor-log4rs.yaml
--rw-r--r-- 1 rink rink 106  5月 18 16:36 genesis.toml
--rw-r--r-- 1 rink rink 318  5月 18 16:36 init_sys_config.toml
--rw-r--r-- 1 rink rink   1  5月 18 16:36 key_id
--rw-r--r-- 1 rink rink 12K  5月 18 16:36 kms.db
--rw-r--r-- 1 rink rink 826  5月 18 16:36 kms-log4rs.yaml
--rw-r--r-- 1 rink rink 175  5月 18 16:36 network-config.toml
--rw-r--r-- 1 rink rink 834  5月 18 16:36 network-log4rs.yaml
--rw-r--r-- 1 rink rink  42  5月 18 16:36 node_address
--rw-r--r-- 1 rink rink 834  5月 18 16:36 storage-log4rs.yaml
-drwxr-xr-x 2 rink rink  40  5月 18 16:36 tx_infos
-
+drwxr-xr-x 2 rink rink 100  5月 18 18:08 config
+-rw-r--r-- 1 rink rink  57  5月 18 18:08 consensus-config.toml
+-rw-r--r-- 1 rink rink 838  5月 18 18:08 consensus-log4rs.yaml
+-rw-r--r-- 1 rink rink 127  5月 18 18:08 controller-config.toml
+-rw-r--r-- 1 rink rink 840  5月 18 18:08 controller-log4rs.yaml
+-rw-r--r-- 1 rink rink 836  5月 18 18:08 executor-log4rs.yaml
+-rw-r--r-- 1 rink rink 106  5月 18 18:08 genesis.toml
+-rw-r--r-- 1 rink rink 318  5月 18 18:08 init_sys_config.toml
+-rw-r--r-- 1 rink rink   1  5月 18 18:08 key_id
+-rw-r--r-- 1 rink rink 12K  5月 18 18:08 kms.db
+-rw-r--r-- 1 rink rink 826  5月 18 18:08 kms-log4rs.yaml
+-rw-r--r-- 1 rink rink  66  5月 18 18:08 network_key
+-rw-r--r-- 1 rink rink 175  5月 18 18:08 network-config.toml
+-rw-r--r-- 1 rink rink 834  5月 18 18:08 network-log4rs.yaml
+-rw-r--r-- 1 rink rink  42  5月 18 18:08 node_address
+-rw-r--r-- 1 rink rink 834  5月 18 18:08 storage-log4rs.yaml
+drwxr-xr-x 2 rink rink  40  5月 18 18:08 tx_infos
 ```
 
 bft的例子
@@ -125,31 +126,32 @@ Done!!!
 ```
 $ cd /tmp/test 
 $ ll
-drwxr-xr-x 2 rink rink 120  5月 18 16:41 0xc15e880847b9c2a9b490f20ac31dc0e6a8ae36c7
-drwx------ 2 rink rink  80  5月 18 16:41 4XDSWSW-MJAVKZZ-WUUQB5O-G3LXYA5-PSHKFBM-EQIY35K-WCUW6GH-DJW6CQG
-drwxr-xr-x 4 rink rink 360  5月 18 16:41 bft-chain-0
-drwxr-xr-x 4 rink rink 360  5月 18 16:41 bft-chain-1
-drwxr-xr-x 4 rink rink 360  5月 18 16:41 bft-chain-2
-drwxr-xr-x 4 rink rink 360  5月 18 16:41 bft-chain-3
-drwx------ 2 rink rink  80  5月 18 16:41 N3YJJYW-7WTAFB3-TK5JCGT-CIZKIJH-V2YBHUA-YA3LTQC-GV4ET5E-TDMFDQ4
-drwx------ 2 rink rink  80  5月 18 16:41 P7OEG2E-6SMC2QP-KB2Z55K-3XFUX2Q-DKP6Y65-YNF7HVB-5YBRYPL-6XHM3QY
-drwx------ 2 rink rink  80  5月 18 16:41 UEFIRWR-P5K7NWC-IZEE3XD-GAMKZ7M-7IEYINA-PTQX4IQ-Q7RHHUD-M2GBZQ5
+drwxr-xr-x 2 rink rink 120  5月 18 18:09 0x808f0ae267e5937bc32836ecc1ecb8107a51e3f5
+drwxr-xr-x 2 rink rink  40  5月 18 18:09 bft-chain
+drwxr-xr-x 4 rink rink 380  5月 18 18:09 bft-chain-0
+drwxr-xr-x 4 rink rink 380  5月 18 18:09 bft-chain-1
+drwxr-xr-x 4 rink rink 380  5月 18 18:09 bft-chain-2
+drwx------ 2 rink rink  80  5月 18 18:09 J7EKZDI-46PMN3D-WZWHW5V-G6H66MO-VFI224Y-BO6RH3S-VXOLS7V-PPZMVQL
+drwx------ 2 rink rink  80  5月 18 18:09 JCGC5C6-AGJKXRI-DQHP6ES-5AIWHR7-IFPIXW4-X5ZXUOC-OLF3IKS-VRKIBQI
+drwx------ 2 rink rink  80  5月 18 18:09 XJE2D7J-PWH73MP-D2JTVGU-IUIVDZ3-X7A737L-THRUCB4-BZMJ3Z7-6CF23AH
 
 $ ll bft-chain-0
-drwxr-xr-x 2 rink rink 100  5月 18 16:41 config
--rw-r--r-- 1 rink rink  57  5月 18 16:41 consensus-config.toml
--rw-r--r-- 1 rink rink 838  5月 18 16:41 consensus-log4rs.yaml
--rw-r--r-- 1 rink rink 127  5月 18 16:41 controller-config.toml
--rw-r--r-- 1 rink rink 840  5月 18 16:41 controller-log4rs.yaml
--rw-r--r-- 1 rink rink 836  5月 18 16:41 executor-log4rs.yaml
--rw-r--r-- 1 rink rink 106  5月 18 16:41 genesis.toml
--rw-r--r-- 1 rink rink 364  5月 18 16:41 init_sys_config.toml
--rw-r--r-- 1 rink rink   1  5月 18 16:41 key_id
--rw-r--r-- 1 rink rink 826  5月 18 16:41 kms-log4rs.yaml
--rw-r--r-- 1 rink rink 241  5月 18 16:41 network-config.toml
--rw-r--r-- 1 rink rink 834  5月 18 16:41 network-log4rs.yaml
--rw-r--r-- 1 rink rink  42  5月 18 16:41 node_address
--rw-r--r-- 1 rink rink  66  5月 18 16:41 node_key
--rw-r--r-- 1 rink rink 834  5月 18 16:41 storage-log4rs.yaml
-drwxr-xr-x 2 rink rink  40  5月 18 16:41 tx_infos
+drwxr-xr-x 2 rink rink 100  5月 18 18:09 config
+-rw-r--r-- 1 rink rink  57  5月 18 18:09 consensus-config.toml
+-rw-r--r-- 1 rink rink 838  5月 18 18:09 consensus-log4rs.yaml
+-rw-r--r-- 1 rink rink 127  5月 18 18:09 controller-config.toml
+-rw-r--r-- 1 rink rink 840  5月 18 18:09 controller-log4rs.yaml
+-rw-r--r-- 1 rink rink 836  5月 18 18:09 executor-log4rs.yaml
+-rw-r--r-- 1 rink rink 106  5月 18 18:09 genesis.toml
+-rw-r--r-- 1 rink rink 318  5月 18 18:09 init_sys_config.toml
+-rw-r--r-- 1 rink rink   1  5月 18 18:09 key_id
+-rw-r--r-- 1 rink rink 826  5月 18 18:09 kms-log4rs.yaml
+-rw-r--r-- 1 rink rink  66  5月 18 18:09 network_key
+-rw-r--r-- 1 rink rink 171  5月 18 18:09 network-config.toml
+-rw-r--r-- 1 rink rink 834  5月 18 18:09 network-log4rs.yaml
+-rw-r--r-- 1 rink rink  42  5月 18 18:09 node_address
+-rw-r--r-- 1 rink rink  66  5月 18 18:09 node_key
+-rw-r--r-- 1 rink rink 834  5月 18 18:09 storage-log4rs.yaml
+drwxr-xr-x 2 rink rink  40  5月 18 18:09 tx_infos
+
 ```
