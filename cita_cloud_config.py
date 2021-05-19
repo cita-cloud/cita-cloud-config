@@ -39,9 +39,6 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--work_dir', default='.', help='The output director of node config files.')
-
-    parser.add_argument(
         '--timestamp',
         type=int,
         help='Timestamp of genesis block.')
@@ -66,14 +63,12 @@ def parse_arguments():
 
     parser.add_argument(
         '--enable_tls',
-        type=bool,
-        default=True,
+        action='store_true',
         help='Is enable tls')
 
     parser.add_argument(
         '--is_stdout',
-        type=bool,
-        default=False,
+        action='store_true',
         help='Is output to stdout')
 
     parser.add_argument(
@@ -83,9 +78,13 @@ def parse_arguments():
 
     parser.add_argument(
         '--is_bft',
-        type=bool,
-        default=False,
+        action='store_true',
         help='Is bft')
+
+    parser.add_argument(
+        '--is_local',
+        action='store_true',
+        help='Is running in local')
 
     args = parser.parse_args()
     return args
@@ -99,8 +98,10 @@ def get_node_pod_name(index, chain_name):
 def get_headless_svc_name(chain_name):
     return '{}-headless-service'.format(chain_name)
 
+
 def get_node_network_name(index, chain_name):
     return '{}.{}'.format(get_node_pod_name(index, chain_name), get_headless_svc_name(chain_name))
+
 
 # generate peers info by pod name
 def gen_peers(count, chain_name):
@@ -114,16 +115,23 @@ def gen_peers(count, chain_name):
     return peers
 
 
-def gen_net_config_list(peers, enable_tls):
+def gen_net_config_list(peers, enable_tls, is_local):
     net_config_list = []
-    for peer in peers:
+    for index, peer in enumerate(peers):
         peers_clone = copy.deepcopy(peers)
         peers_clone.remove(peer)
-        net_config = {
-            'enable_tls': enable_tls,
-            'port': 40000,
-            'peers': peers_clone
-        }
+        if not is_local:
+            net_config = {
+                'enable_tls': enable_tls,
+                'port': 40000,
+                'peers': peers_clone
+            }
+        else:
+            net_config = {
+                'enable_tls': enable_tls,
+                'port': 40000 + index,
+                'peers': "127.0.0.1"
+            }
         net_config_list.append(net_config)
     return net_config_list
 
@@ -190,33 +198,42 @@ def gen_log4rs_config(node_path, log_level, is_stdout):
             stream.write(LOG_CONFIG_TEMPLATE.format(service_name, log_level, appender))
 
 
-CONSENSUS_CONFIG_TEMPLATE = '''network_port = 50000
-controller_port = 50004
+CONSENSUS_CONFIG_TEMPLATE = '''network_port = {}
+controller_port = {}
 node_id = {}
 '''
 
 
 # generate consensus-config.toml
-def gen_consensus_config(node_path, i):
+def gen_consensus_config(node_path, i, num):
     path = os.path.join(node_path, 'consensus-config.toml')
     with open(path, 'wt') as stream:
-        stream.write(CONSENSUS_CONFIG_TEMPLATE.format(i))
+        stream.write(CONSENSUS_CONFIG_TEMPLATE.format(
+            num,
+            num + 4,
+            i))
 
 
-CONTROLLER_CONFIG_TEMPLATE = '''network_port = 50000
-consensus_port = 50001
-storage_port = 50003
-kms_port = 50005
-executor_port = 50002
+CONTROLLER_CONFIG_TEMPLATE = '''network_port = {}
+consensus_port = {}
+storage_port = {}
+kms_port = {}
+executor_port = {}
 block_delay_number = {}
 '''
 
 
 # generate controller-config.toml
-def gen_controller_config(node_path, block_delay_number):
+def gen_controller_config(node_path, block_delay_number, num):
     path = os.path.join(node_path, 'controller-config.toml')
     with open(path, 'wt') as stream:
-        stream.write(CONTROLLER_CONFIG_TEMPLATE.format(block_delay_number))
+        stream.write(CONTROLLER_CONFIG_TEMPLATE.format(
+            num,
+            num + 1,
+            num + 3,
+            num + 5,
+            num + 2,
+            block_delay_number))
 
 
 GENESIS_TEMPLATE = '''timestamp = {}
@@ -240,19 +257,18 @@ def gen_kms_account(work_dir):
     key_id = infos[0].split(':')[1]
     address = infos[1].split(':')[1]
 
-    dir = os.path.join(work_dir, address)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    if not os.path.exists(work_dir):
+        os.makedirs(work_dir)
 
     current_dir = os.path.abspath(os.curdir)
-    shutil.move(os.path.join(current_dir, 'kms.db'), os.path.join(dir, 'kms.db'))
-    shutil.move(os.path.join(current_dir, 'key_file'), os.path.join(dir, 'key_file'))
+    shutil.move(os.path.join(current_dir, 'kms.db'), os.path.join(work_dir, 'kms.db'))
+    shutil.move(os.path.join(current_dir, 'key_file'), os.path.join(work_dir, 'key_file'))
 
-    path = os.path.join(dir, 'key_id')
+    path = os.path.join(work_dir, 'key_id')
     with open(path, 'wt') as stream:
         stream.write(key_id)
 
-    path = os.path.join(dir, 'node_address')
+    path = os.path.join(work_dir, 'node_address')
     with open(path, 'wt') as stream:
         stream.write(address)
 
@@ -295,14 +311,10 @@ def gen_authorities(work_dir, chain_name, kms_password, peers_count):
         with open(path, 'wt') as stream:
             stream.write(kms_password)
 
-        address = gen_kms_account(work_dir)
+        node_dir = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, chain_name)))
 
-        dir = os.path.join(work_dir, address)
-        node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, chain_name)))
+        address = gen_kms_account(node_dir)
 
-        shutil.copy(os.path.join(dir, 'kms.db'), node_path)
-        shutil.copy(os.path.join(dir, 'key_id'), node_path)
-        shutil.copy(os.path.join(dir, 'node_address'), node_path)
         authorities.append(address)
     return authorities
 
@@ -414,7 +426,7 @@ def gen_sync_configs(work_dir, sync_peers, chain_name):
 
 
 def run_subcmd_local_cluster(args):
-    work_dir = args.work_dir
+    work_dir = "tmp"
 
     chain_path = os.path.join(work_dir, '{}'.format(args.chain_name))
     if os.path.exists(chain_path):
@@ -430,7 +442,7 @@ def run_subcmd_local_cluster(args):
     print("peers:", peers)
 
     # generate network config for all peers
-    net_config_list = gen_net_config_list(peers, args.enable_tls)
+    net_config_list = gen_net_config_list(peers, args.enable_tls, args.is_local)
     print("net_config_list:", net_config_list)
 
     # generate node config
@@ -439,6 +451,9 @@ def run_subcmd_local_cluster(args):
     else:
         timestamp = args.timestamp
     for index, net_config in enumerate(net_config_list):
+        num = 50000
+        if args.is_local:
+            num = num + index * 10000
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
         need_directory(node_path)
         tx_infos_path = os.path.join(node_path, 'tx_infos')
@@ -451,27 +466,30 @@ def run_subcmd_local_cluster(args):
         gen_network_key(node_path)
         # generate log config
         gen_log4rs_config(node_path, args.log_level, args.is_stdout)
-        gen_consensus_config(node_path, index)
-        gen_controller_config(node_path, args.block_delay_number)
+        gen_consensus_config(node_path, index, num)
+        gen_controller_config(node_path, args.block_delay_number, num)
         # generate genesis
         gen_genesis(node_path, timestamp, DEFAULT_PREVHASH)
 
 
     # generate init_sys_config
     # is bft
-    super_admin = gen_super_admin(work_dir, args.kms_password)
+    admin_dir = os.path.join(work_dir, "admin")
+    super_admin = gen_super_admin(admin_dir, args.kms_password)
     if args.is_bft:
+        gen_authorities(work_dir, args.chain_name, args.kms_password, args.peers_count)
         authorities = gen_sm2_authorities(work_dir, args.chain_name, args.peers_count)
     else:
         authorities = gen_authorities(work_dir, args.chain_name, args.kms_password, args.peers_count)
     gen_init_sysconfig(work_dir, args.chain_name, super_admin, authorities, args.peers_count)
 
-    # generate syncthing config
-    sync_peers = gen_sync_peers(work_dir, args.peers_count, args.chain_name)
-    print("sync_peers:", sync_peers)
-    gen_sync_configs(work_dir, sync_peers, args.chain_name)
+    if not args.is_local:
+        # generate syncthing config
+        sync_peers = gen_sync_peers(work_dir, args.peers_count, args.chain_name)
+        print("sync_peers:", sync_peers)
+        gen_sync_configs(work_dir, sync_peers, args.chain_name)
+        os.makedirs(chain_path)
 
-    os.makedirs(chain_path)
     print("Done!!!")
 
 
