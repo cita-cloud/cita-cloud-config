@@ -14,6 +14,7 @@ import hashlib
 from pysmx.SM2 import generate_keypair
 from pysmx.SM3 import hash_msg
 import shutil
+import fcntl
 
 DEFAULT_PREVHASH = '0x{:064x}'.format(0)
 
@@ -416,9 +417,21 @@ def gen_sync_configs(work_dir, sync_peers, chain_name):
 def run_subcmd_local_cluster(args):
     work_dir = args.work_dir
 
-    chain_path = os.path.join(work_dir, '{}'.format(args.chain_name))
-    if os.path.exists(chain_path):
-        print('chain {} already existed!'.format(args.chain_name))
+    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
+    with open(lock_file, 'wt') as stream:
+        None
+
+    lock_f = open(lock_file, "r")
+
+    try:
+      fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except:
+      print("another instance is running...")
+      sys.exit(1)
+
+    complete_file = os.path.join(work_dir, '{}.complete'.format(args.chain_name))
+    if os.path.exists(complete_file):
+        print('chain {} already complete!'.format(args.chain_name))
         sys.exit(0)
 
     if not args.kms_password:
@@ -471,7 +484,8 @@ def run_subcmd_local_cluster(args):
     print("sync_peers:", sync_peers)
     gen_sync_configs(work_dir, sync_peers, args.chain_name)
 
-    os.makedirs(chain_path)
+    with open(complete_file, 'wt') as stream:
+        None
     print("Done!!!")
 
 
