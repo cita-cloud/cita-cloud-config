@@ -104,13 +104,19 @@ def get_node_network_name(index, chain_name):
 
 
 # generate peers info by pod name
-def gen_peers(count, chain_name):
+def gen_peers(count, chain_name, is_local):
     peers = []
     for i in range(count):
-        peer = {
-            'ip': get_node_network_name(i, chain_name),
-            'port': 40000
-        }
+        if not is_local:
+            peer = {
+                'ip': get_node_network_name(i, chain_name),
+                'port': 40000
+            }
+        else:
+            peer = {
+                'ip': "127.0.0.1",
+                'port': 40000 + i
+            }
         peers.append(peer)
     return peers
 
@@ -130,7 +136,7 @@ def gen_net_config_list(peers, enable_tls, is_local):
             net_config = {
                 'enable_tls': enable_tls,
                 'port': 40000 + index,
-                'peers': "127.0.0.1"
+                'peers': peers_clone
             }
         net_config_list.append(net_config)
     return net_config_list
@@ -438,7 +444,7 @@ def run_subcmd_local_cluster(args):
         sys.exit(1)
 
     # generate peers info by pod name
-    peers = gen_peers(args.peers_count, args.chain_name)
+    peers = gen_peers(args.peers_count, args.chain_name, args.is_local)
     print("peers:", peers)
 
     # generate network config for all peers
