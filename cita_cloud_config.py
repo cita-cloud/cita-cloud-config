@@ -36,6 +36,17 @@ SERVICE_LIST = [
 ]
 
 
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() == 'false':
+        return False
+    elif value.lower() == 'true':
+        return True
+    raise ValueError(f'{value} is not a valid boolean value')
+
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
@@ -67,13 +78,13 @@ def parse_arguments():
 
     parser.add_argument(
         '--enable_tls',
-        type=bool,
+        type=str_to_bool,
         default=True,
         help='Is enable tls')
 
     parser.add_argument(
         '--is_stdout',
-        type=bool,
+        type=str_to_bool,
         default=False,
         help='Is output to stdout')
 
@@ -84,7 +95,7 @@ def parse_arguments():
 
     parser.add_argument(
         '--is_bft',
-        type=bool,
+        type=str_to_bool,
         default=False,
         help='Is bft')
 
