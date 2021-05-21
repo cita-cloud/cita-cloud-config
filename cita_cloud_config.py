@@ -15,6 +15,7 @@ from pysmx.SM2 import generate_keypair
 from pysmx.SM3 import hash_msg
 import shutil
 import fcntl
+import re
 
 DEFAULT_PREVHASH = '0x{:064x}'.format(0)
 
@@ -50,54 +51,124 @@ def str_to_bool(value):
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
+    subparsers = parser.add_subparsers(
+        dest='subcmd', title='subcommands', help='additional help')
+
+    #
+    # Subcommand: init
+    #
+
+    pInit = subparsers.add_parser(
+        SUBCMD_INIT, help='Init a chain.')
+
+    pInit.add_argument(
         '--work_dir', default='.', help='The output director of node config files.')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--timestamp',
         type=int,
         help='Timestamp of genesis block.')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--block_delay_number',
         type=int,
         default=0,
         help='The block delay number of chain.')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--chain_name', default='test-chain', help='The name of chain.')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--peers_count',
         type=int,
         default=2,
         help='Count of peers.')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--kms_password', help='Password of kms.')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--enable_tls',
         type=str_to_bool,
         default=True,
         help='Is enable tls')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--is_stdout',
         type=str_to_bool,
         default=False,
         help='Is output to stdout')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--log_level',
         default="info",
         help='log level: warn/info/debug/trace')
 
-    parser.add_argument(
+    pInit.add_argument(
         '--is_bft',
         type=str_to_bool,
         default=False,
         help='Is bft')
+
+    #
+    # Subcommand: increase
+    #
+
+    pIncrease = subparsers.add_parser(
+        SUBCMD_INCREASE, help='Increase one node.')
+
+    pIncrease.add_argument(
+        '--work_dir', default='.', help='The output director of node config files.')
+
+    pIncrease.add_argument(
+        '--chain_name', default='test-chain', help='The name of chain.')
+
+    pIncrease.add_argument(
+        '--kms_password', help='Password of kms.')
+
+    pIncrease.add_argument(
+        '--is_bft',
+        type=str_to_bool,
+        default=False,
+        help='Is bft')
+
+    pIncrease.add_argument(
+        '--enable_tls',
+        type=str_to_bool,
+        default=True,
+        help='Is enable tls')
+
+    #
+    # Subcommand: decrease
+    #
+
+    pDecrease = subparsers.add_parser(
+        SUBCMD_DECREASE, help='Decrease one node.')
+
+    pDecrease.add_argument(
+        '--work_dir', default='.', help='The output director of node config files.')
+
+    pDecrease.add_argument(
+        '--chain_name', default='test-chain', help='The name of chain.')
+
+    pDecrease.add_argument(
+        '--enable_tls',
+        type=str_to_bool,
+        default=True,
+        help='Is enable tls')
+
+    #
+    # Subcommand: clean
+    #
+
+    pClean = subparsers.add_parser(
+        SUBCMD_CLEAN, help='Clean a chain.')
+
+    pClean.add_argument(
+        '--work_dir', default='.', help='The output director of node config files.')
+
+    pClean.add_argument(
+        '--chain_name', default='test-chain', help='The name of chain.')
 
     args = parser.parse_args()
     return args
@@ -242,7 +313,7 @@ def gen_genesis(node_path, timestamp, prevhash):
         stream.write(GENESIS_TEMPLATE.format(timestamp, prevhash))
 
 
-def gen_kms_account(work_dir):
+def gen_kms_account(chain_path):
     cmd = 'kms create -k key_file'
     kms_create = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output = kms_create.stdout.readlines()[-1].decode().strip()
@@ -252,7 +323,7 @@ def gen_kms_account(work_dir):
     key_id = infos[0].split(':')[1]
     address = infos[1].split(':')[1]
 
-    dir = os.path.join(work_dir, address)
+    dir = os.path.join(chain_path, address)
     if not os.path.exists(dir):
         os.makedirs(dir)
 
@@ -271,30 +342,36 @@ def gen_kms_account(work_dir):
     return address
 
 
-def gen_super_admin(work_dir, kms_password):
+def gen_super_admin(work_dir, chain_name, kms_password):
     current_dir = os.path.abspath(os.curdir)
     path = os.path.join(current_dir, 'key_file')
     with open(path, 'wt') as stream:
         stream.write(kms_password)
-    super_admin = gen_kms_account(work_dir)
+    chain_path = os.path.join(work_dir, chain_name)
+    super_admin = gen_kms_account(chain_path)
     return super_admin
+
+
+def gen_sm2_account(node_path):
+    pk, sk = generate_keypair()
+    addr = '0x'+hash_msg(pk)[24:]
+    path = os.path.join(node_path, 'node_key')
+    with open(path, 'wt') as stream:
+        stream.write('0x'+sk.hex())
+    path = os.path.join(node_path, 'node_address')
+    with open(path, 'wt') as stream:
+        stream.write(addr)
+    path = os.path.join(node_path, 'key_id')
+    with open(path, 'wt') as stream:
+        stream.write(str(0))
+    return addr
 
 
 def gen_sm2_authorities(work_dir, chain_name, peers_count):
     authorities = []
     for i in range(peers_count):
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, chain_name)))
-        pk, sk = generate_keypair()
-        addr = '0x'+hash_msg(pk)[24:]
-        path = os.path.join(node_path, 'node_key')
-        with open(path, 'wt') as stream:
-            stream.write('0x'+sk.hex())
-        path = os.path.join(node_path, 'node_address')
-        with open(path, 'wt') as stream:
-            stream.write(addr)
-        path = os.path.join(node_path, 'key_id')
-        with open(path, 'wt') as stream:
-            stream.write(str(i))
+        addr = gen_sm2_account(node_path)
         authorities.append(addr)
     return authorities
 
@@ -307,9 +384,10 @@ def gen_authorities(work_dir, chain_name, kms_password, peers_count):
         with open(path, 'wt') as stream:
             stream.write(kms_password)
 
-        address = gen_kms_account(work_dir)
+        chain_path = os.path.join(work_dir, chain_name)
+        address = gen_kms_account(chain_path)
 
-        dir = os.path.join(work_dir, address)
+        dir = os.path.join(chain_path, address)
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, chain_name)))
 
         shutil.copy(os.path.join(dir, 'kms.db'), node_path)
@@ -342,8 +420,8 @@ def gen_init_sysconfig(work_dir, chain_name, super_admin, authorities, peers_cou
             toml.dump(init_sys_config, stream)
 
 
-def gen_sync_account(work_dir):
-    sync_config_path = os.path.join(work_dir, 'sync_config')
+def gen_sync_account(chain_path):
+    sync_config_path = os.path.join(chain_path, 'sync_config')
     cmd = 'syncthing -generate={}'.format(sync_config_path)
     syncthing_gen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     mark_str = 'Device ID: '
@@ -351,9 +429,8 @@ def gen_sync_account(work_dir):
     output = str(syncthing_gen.stdout.read())
     mark_index = output.index(mark_str)
     device_id = output[mark_index + len(mark_str):mark_index + len(mark_str) + device_id_len]
-    print("device_id:", device_id)
 
-    target_dir = os.path.join(work_dir, device_id)
+    target_dir = os.path.join(chain_path, device_id)
 
     shutil.move(sync_config_path, target_dir)
 
@@ -365,9 +442,10 @@ def gen_sync_account(work_dir):
 
 # generate sync peers info by pod name
 def gen_sync_peers(work_dir, peers_count, chain_name):
+    chain_path = os.path.join(work_dir, chain_name)
     peers = []
     for i in range(peers_count):
-        device_id = gen_sync_account(work_dir)
+        device_id = gen_sync_account(chain_path)
         print("device_id:", device_id)
         peer = {
             'ip': get_node_network_name(i, chain_name),
@@ -420,14 +498,13 @@ def gen_sync_configs(work_dir, sync_peers, chain_name):
 
         config_example.write(os.path.join(path, 'config.xml'))
 
-        account_dir = os.path.join(work_dir, sync_peers[i]['device_id'])
+        chain_path = os.path.join(work_dir, chain_name)
+        account_dir = os.path.join(chain_path, sync_peers[i]['device_id'])
         shutil.copy(os.path.join(account_dir, 'cert.pem'), path)
         shutil.copy(os.path.join(account_dir, 'key.pem'), path)
 
 
-def run_subcmd_local_cluster(args):
-    work_dir = args.work_dir
-
+def run_subcmd_init(args, work_dir):
     lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
     with open(lock_file, 'wt') as stream:
         None
@@ -444,6 +521,9 @@ def run_subcmd_local_cluster(args):
     if os.path.exists(complete_file):
         print('chain {} already complete!'.format(args.chain_name))
         sys.exit(0)
+
+    chain_path = os.path.join(work_dir, args.chain_name)
+    need_directory(chain_path)
 
     if not args.kms_password:
         print('kms_password must be set!')
@@ -483,7 +563,7 @@ def run_subcmd_local_cluster(args):
 
     # generate init_sys_config
     # is bft
-    super_admin = gen_super_admin(work_dir, args.kms_password)
+    super_admin = gen_super_admin(work_dir, args.chain_name, args.kms_password)
     if args.is_bft:
         authorities = gen_sm2_authorities(work_dir, args.chain_name, args.peers_count)
     else:
@@ -500,11 +580,195 @@ def run_subcmd_local_cluster(args):
     print("Done!!!")
 
 
+def run_subcmd_increase(args, work_dir):
+    if not args.is_bft:
+        if not args.kms_password:
+            print('kms_password must be set!')
+            sys.exit(1)
+
+    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
+    lock_f = open(lock_file, "r")
+
+    try:
+      fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except:
+      print("another instance is running...")
+      sys.exit(1)
+
+    chain_path = os.path.join(work_dir, args.chain_name)
+    need_directory(chain_path)
+
+    peers_count = 0
+    work_dir_walk = os.walk(work_dir)
+    for path,dir_list,file_list in work_dir_walk:
+        for dir_name in dir_list:
+            if re.match('{}-[0-9]+$'.format(args.chain_name), dir_name):
+                peers_count += 1
+
+    print('found {} nodes'.format(peers_count))
+
+    new_peer_no = peers_count
+    new_peers_count = peers_count + 1
+    print('will add node {}, new peers_count is {}'.format(new_peer_no, new_peers_count))
+
+    # regenerate peers info by pod name
+    peers = gen_peers(new_peers_count, args.chain_name)
+    print("peers:", peers)
+
+    # regenerate network config for all peers
+    net_config_list = gen_net_config_list(peers, args.enable_tls)
+    print("net_config_list:", net_config_list)
+    for index, net_config in enumerate(net_config_list):
+        node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
+        need_directory(node_path)
+        # generate network config file
+        net_config_file = os.path.join(node_path, 'network-config.toml')
+        with open(net_config_file, 'wt') as stream:
+            toml.dump(net_config, stream)
+        # generate network key
+        gen_network_key(node_path)
+
+    # regenerate syncthing config
+    sync_peers = gen_sync_peers(work_dir, new_peers_count, args.chain_name)
+    print("sync_peers:", sync_peers)
+    gen_sync_configs(work_dir, sync_peers, args.chain_name)
+
+    source_node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(0, args.chain_name)))
+    new_node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(new_peer_no, args.chain_name)))
+
+    # generate network key
+    gen_network_key(new_node_path)
+
+    tx_infos_path = os.path.join(new_node_path, 'tx_infos')
+    need_directory(tx_infos_path)
+
+    # copy log config
+    for service_name in SERVICE_LIST:
+        shutil.copy(os.path.join(source_node_path, '{}-log4rs.yaml'.format(service_name)), new_node_path)
+
+    # copy consensus config
+    shutil.copy(os.path.join(source_node_path, 'consensus-config.toml'), new_node_path)
+
+    # copy controller config
+    shutil.copy(os.path.join(source_node_path, 'controller-config.toml'), new_node_path)
+
+    # copy genesis
+    shutil.copy(os.path.join(source_node_path, 'genesis.toml'), new_node_path)
+
+    # copy init_sys_config
+    shutil.copy(os.path.join(source_node_path, 'init_sys_config.toml'), new_node_path)
+
+    # generate new account
+    if args.is_bft:
+        address = gen_sm2_account(new_node_path)
+    else:
+        current_dir = os.path.abspath(os.curdir)
+        path = os.path.join(current_dir, 'key_file')
+        with open(path, 'wt') as stream:
+            stream.write(args.kms_password)
+
+        address = gen_kms_account(chain_path)
+
+        dir = os.path.join(chain_path, address)
+
+        shutil.copy(os.path.join(dir, 'kms.db'), node_path)
+        shutil.copy(os.path.join(dir, 'key_id'), node_path)
+        shutil.copy(os.path.join(dir, 'node_address'), node_path)
+    print('new node address {}'.format(address))
+
+
+def run_subcmd_decrease(args, work_dir):
+    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
+    lock_f = open(lock_file, "r")
+
+    try:
+      fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except:
+      print("another instance is running...")
+      sys.exit(1)
+
+    peers_count = 0
+    work_dir_walk = os.walk(work_dir)
+    for path,dir_list,file_list in work_dir_walk:
+        for dir_name in dir_list:
+            if re.match('{}-[0-9]+$'.format(args.chain_name), dir_name):
+                peers_count += 1
+
+    print('found {} nodes'.format(peers_count))
+
+    last_peer_no = peers_count - 1
+    new_peers_count = peers_count - 1
+    print('will delete node {0}, new peers_count is {0}'.format(last_peer_no, new_peers_count))
+
+    # regenerate peers info by pod name
+    peers = gen_peers(new_peers_count, args.chain_name)
+    print("peers:", peers)
+
+    # regenerate network config for all peers
+    net_config_list = gen_net_config_list(peers, args.enable_tls)
+    print("net_config_list:", net_config_list)
+    for index, net_config in enumerate(net_config_list):
+        node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
+        need_directory(node_path)
+        # generate network config file
+        net_config_file = os.path.join(node_path, 'network-config.toml')
+        with open(net_config_file, 'wt') as stream:
+            toml.dump(net_config, stream)
+        # generate network key
+        gen_network_key(node_path)
+
+    # regenerate syncthing config
+    sync_peers = gen_sync_peers(work_dir, new_peers_count, args.chain_name)
+    print("sync_peers:", sync_peers)
+    gen_sync_configs(work_dir, sync_peers, args.chain_name)
+
+    last_node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(last_peer_no, args.chain_name)))
+    shutil.rmtree(last_node_path)
+
+
+def run_subcmd_clean(args, work_dir):
+    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
+    lock_f = open(lock_file, "r")
+
+    try:
+      fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except:
+      print("another instance is running...")
+      sys.exit(1)
+
+    work_dir_walk = os.walk(work_dir)
+    for path,dir_list,file_list in work_dir_walk:
+        for dir_name in dir_list:
+            if re.match('{}-[0-9]+$'.format(args.chain_name), dir_name):
+                shutil.rmtree(os.path.join(work_dir, dir_name))
+
+    chain_path = os.path.join(work_dir, args.chain_name)
+    shutil.rmtree(chain_path)
+
+    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
+    complete_file = os.path.join(work_dir, '{}.complete'.format(args.chain_name))
+    os.remove(lock_file)
+    os.remove(complete_file)
+
+    print('chain {} has clean!'.format(args.chain_name))
+
+
 def main():
     args = parse_arguments()
     print("args:", args)
-    run_subcmd_local_cluster(args)
+    funcs_router = {
+        SUBCMD_INIT: run_subcmd_init,
+        SUBCMD_INCREASE: run_subcmd_increase,
+        SUBCMD_DECREASE: run_subcmd_decrease,
+        SUBCMD_CLEAN: run_subcmd_clean,
+    }
+    work_dir = os.path.abspath(args.work_dir)
+    funcs_router[args.subcmd](args, work_dir)
 
 
 if __name__ == '__main__':
+    SUBCMD_INIT = 'init'
+    SUBCMD_INCREASE = 'increase'
+    SUBCMD_DECREASE = 'decrease'
+    SUBCMD_CLEAN = 'clean'
     main()
