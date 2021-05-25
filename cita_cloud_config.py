@@ -630,6 +630,9 @@ def run_subcmd_init(args, work_dir):
     gen_init_sysconfig(work_dir, args.chain_name, super_admin, authorities, args.peers_count)
 
     # generate syncthing config
+    if not args.nodes:
+        for peer in peers:
+            peer['port'] = 22000 - 1
     sync_peers = gen_sync_peers(work_dir, peers, args.chain_name)
     print("sync_peers:", sync_peers)
     gen_sync_configs(work_dir, sync_peers, args.chain_name)
@@ -696,11 +699,18 @@ def run_subcmd_increase(args, work_dir):
     chain_path = os.path.join(work_dir, args.chain_name)
     device_id = gen_sync_account(chain_path)
     print("new device_id:", device_id)
-    sync_peer = {
-        'ip': peers[-1]['ip'],
-        'port': peers[-1]['port'] + 1,
-        'device_id': device_id
-    }
+    if args.node:
+        sync_peer = {
+            'ip': peers[-1]['ip'],
+            'port': peers[-1]['port'] + 1,
+            'device_id': device_id
+        }
+    else:
+        sync_peer = {
+            'ip': peers[-1]['ip'],
+            'port': 22000,
+            'device_id': device_id
+        }
     sync_peers.append(sync_peer)
     print("sync_peers:", sync_peers)
     chain_config.sync_peers = sync_peers
