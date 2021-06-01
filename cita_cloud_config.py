@@ -43,7 +43,6 @@ SERVICE_LIST = [
 class ChainConfig:
     work_dir = '.'
     timestamp = 0
-    block_delay_number = 0
     chain_name = 'test-chain'
     peers_count = 3
     peers = []
@@ -51,8 +50,6 @@ class ChainConfig:
     super_admin = ''
     kms_passwords = []
     enable_tls = True
-    is_stdout = False
-    log_level = 'info'
     is_bft = False
 
     def __init__(self, chain_name, work_dir):
@@ -576,6 +573,8 @@ def run_subcmd_init(args, work_dir):
     net_config_list = gen_net_config_list(peers, args.enable_tls)
     print("net_config_list:", net_config_list)
 
+    chain_config.enable_tls = args.enable_tls
+
     # generate node config
     if not args.timestamp:
         timestamp = int(time.time() * 1000)
@@ -628,6 +627,8 @@ def run_subcmd_init(args, work_dir):
     else:
         authorities = gen_authorities(work_dir, args.chain_name, kms_passwords, args.peers_count)
     gen_init_sysconfig(work_dir, args.chain_name, super_admin, authorities, args.peers_count)
+
+    chain_config.is_bft = args.is_bft
 
     # generate syncthing config
     if not args.nodes:
