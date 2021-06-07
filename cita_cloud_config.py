@@ -14,7 +14,6 @@ import hashlib
 from pysmx.SM2 import generate_keypair
 from pysmx.SM3 import hash_msg
 import shutil
-import fcntl
 import re
 from random import choice
 import string
@@ -534,18 +533,6 @@ def gen_sync_configs(work_dir, sync_peers, chain_name):
 
 
 def run_subcmd_init(args, work_dir):
-    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
-    with open(lock_file, 'wt') as stream:
-        None
-
-    lock_f = open(lock_file, "r")
-
-    try:
-      fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except:
-      print("another instance is running...")
-      sys.exit(1)
-
     config_file = os.path.join(work_dir, '{}.config'.format(args.chain_name))
     if os.path.exists(config_file):
         print('chain {} already config!'.format(args.chain_name))
@@ -645,15 +632,6 @@ def run_subcmd_init(args, work_dir):
 
 
 def run_subcmd_increase(args, work_dir):
-    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
-    lock_f = open(lock_file, "r")
-
-    try:
-      fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except:
-      print("another instance is running...")
-      sys.exit(1)
-
     config_file = os.path.join(work_dir, '{}.config'.format(args.chain_name))
     with open(config_file, 'rb') as f:
         chain_config = pickle.load(f)
@@ -779,15 +757,6 @@ def run_subcmd_increase(args, work_dir):
 
 
 def run_subcmd_decrease(args, work_dir):
-    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
-    lock_f = open(lock_file, "r")
-
-    try:
-        fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except:
-        print("another instance is running...")
-        sys.exit(1)
-
     config_file = os.path.join(work_dir, '{}.config'.format(args.chain_name))
     with open(config_file, 'rb') as f:
         chain_config = pickle.load(f)
@@ -832,31 +801,28 @@ def run_subcmd_decrease(args, work_dir):
 
 
 def run_subcmd_clean(args, work_dir):
-    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
-    lock_f = open(lock_file, "r")
-
-    try:
-      fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except:
-      print("another instance is running...")
-      sys.exit(1)
-
     config_file = os.path.join(work_dir, '{}.config'.format(args.chain_name))
     with open(config_file, 'rb') as f:
         chain_config = pickle.load(f)
 
     for i in range(chain_config.peers_count):
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, args.chain_name)))
-        shutil.rmtree(node_path)
+        try:
+            shutil.rmtree(node_path)
+        except:
+            pass
 
     chain_path = os.path.join(work_dir, args.chain_name)
-    shutil.rmtree(chain_path)
+    try:
+        shutil.rmtree(chain_path)
+    except:
+        pass
 
-    lock_file = os.path.join(work_dir, '{}.lock'.format(args.chain_name))
     config_file = os.path.join(work_dir, '{}.config'.format(args.chain_name))
-    os.remove(lock_file)
-    os.remove(config_file)
-
+    try:
+        os.remove(config_file)
+    except:
+        pass
     print('chain {} has clean!'.format(args.chain_name))
 
 
