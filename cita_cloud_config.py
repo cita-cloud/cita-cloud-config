@@ -841,11 +841,13 @@ def run_subcmd_clean(args, work_dir):
       print("another instance is running...")
       sys.exit(1)
 
-    work_dir_walk = os.walk(work_dir)
-    for path,dir_list,file_list in work_dir_walk:
-        for dir_name in dir_list:
-            if re.match('{}-[0-9]+$'.format(args.chain_name), dir_name):
-                shutil.rmtree(os.path.join(work_dir, dir_name))
+    config_file = os.path.join(work_dir, '{}.config'.format(args.chain_name))
+    with open(config_file, 'rb') as f:
+        chain_config = pickle.load(f)
+
+    for i in range(chain_config.peers_count):
+        node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, args.chain_name)))
+        shutil.rmtree(node_path)
 
     chain_path = os.path.join(work_dir, args.chain_name)
     shutil.rmtree(chain_path)
