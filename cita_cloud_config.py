@@ -459,7 +459,7 @@ def run_subcmd_local_cluster(args):
     for index, net_config in enumerate(net_config_list):
         num = 50000
         if args.is_local:
-            num = num + index * 10000
+            num = num + index * 1000
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
         need_directory(node_path)
         tx_infos_path = os.path.join(node_path, 'tx_infos')
