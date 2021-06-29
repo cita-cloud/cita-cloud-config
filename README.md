@@ -5,7 +5,6 @@
 ### 依赖
 
 * python 3
-* [syncthing](https://syncthing.net)
 * [kms_sm](https://github.com/cita-cloud/kms_sm) 或者 [kms_eth](https://github.com/cita-cloud/kms_eth)
 
 安装依赖包:
@@ -73,14 +72,11 @@ $ ./cita_cloud_config.py init --work_dir /tmp/test --peers_count 3 --kms_passwor
 args: Namespace(subcmd='init', work_dir='/tmp/test', timestamp=None, block_delay_number=0, chain_name='test-chain', peers_count=3, nodes=None, super_admin=None, kms_passwords='123456', enable_tls=True, is_stdout=False, log_level='info', is_bft=False)
 peers: [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}]
 net_config_list: [{'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}]}, {'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}]}, {'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}]}]
-kms create output: key_id:1,address:0x459fa88bd1b6160bfb0a2a3acc72d828d9dbbfb8
-kms create output: key_id:1,address:0x446f2bd83c79f508eadf5c650ef273a750f02ffa
-kms create output: key_id:1,address:0xb6a04002ba5c71bd1b775fdb3e47eeead26ce8b7
-kms create output: key_id:1,address:0x3a7427d1629a266fb35d42239d1aef654956398b
-device_id: TMBPDQG-O7UU4NO-HN4E5IV-NDDGTWT-UYCNNAM-4XQFXPS-FEH2JPS-JLFN4AR
-device_id: JE3YFPS-5GMICM5-SMTVQGQ-4QRIWYT-IJSBYEC-SO35Z33-JG67YAB-5BSP3AO
-device_id: FWZFBXZ-KH4LGY7-MRILEIY-UTS4SDC-JSFESOI-XLBBMKQ-K74NG7K-JXQHBA7
-sync_peers: [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40001, 'device_id': 'TMBPDQG-O7UU4NO-HN4E5IV-NDDGTWT-UYCNNAM-4XQFXPS-FEH2JPS-JLFN4AR'}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40001, 'device_id': 'JE3YFPS-5GMICM5-SMTVQGQ-4QRIWYT-IJSBYEC-SO35Z33-JG67YAB-5BSP3AO'}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40001, 'device_id': 'FWZFBXZ-KH4LGY7-MRILEIY-UTS4SDC-JSFESOI-XLBBMKQ-K74NG7K-JXQHBA7'}]
+kms_passwords:  ['123456', '123456', '123456', '123456']
+kms create output: key_id:1,address:0x7e3cd9b14155ea568f7dba141c0493297a176aca
+kms create output: key_id:1,address:0xbd7e6ba6fe57abd59f110c4b98522258280a722a
+kms create output: key_id:1,address:0xa91d14e24e3ef0583851110398aba8a79fc7c80e
+kms create output: key_id:1,address:0xa7e84a6e67085884979007eb05948ecdaa3e0b02
 Done!!!
 ```
 
@@ -89,18 +85,16 @@ Done!!!
 ```
 $ cd /tmp/test 
 $ ls
-test-chain  test-chain-0  test-chain-1  test-chain-2  test-chain.config  test-chain.lock
+test-chain  test-chain-0  test-chain-1  test-chain-2  test-chain.config
 
 $ ls test-chain
-0x3a7427d1629a266fb35d42239d1aef654956398b  FWZFBXZ-KH4LGY7-MRILEIY-UTS4SDC-JSFESOI-XLBBMKQ-K74NG7K-JXQHBA7
-0x446f2bd83c79f508eadf5c650ef273a750f02ffa  JE3YFPS-5GMICM5-SMTVQGQ-4QRIWYT-IJSBYEC-SO35Z33-JG67YAB-5BSP3AO
-0x459fa88bd1b6160bfb0a2a3acc72d828d9dbbfb8  TMBPDQG-O7UU4NO-HN4E5IV-NDDGTWT-UYCNNAM-4XQFXPS-FEH2JPS-JLFN4AR
-0xb6a04002ba5c71bd1b775fdb3e47eeead26ce8b7
+0x7e3cd9b14155ea568f7dba141c0493297a176aca  0xa91d14e24e3ef0583851110398aba8a79fc7c80e
+0xa7e84a6e67085884979007eb05948ecdaa3e0b02  0xbd7e6ba6fe57abd59f110c4b98522258280a722a
 
 $ ls test-chain-0 
-config                 controller-config.toml  genesis.toml          kms.db               network_key          storage-log4rs.yaml
+blocks                 controller-config.toml  genesis.toml          kms.db               network_key          storage-log4rs.yaml
 consensus-config.toml  controller-log4rs.yaml  init_sys_config.toml  kms-log4rs.yaml      network-log4rs.yaml  tx_infos
-consensus-log4rs.yaml  executor-log4rs.yaml    key_id                network-config.toml  node_address
+consensus-log4rs.yaml  executor-log4rs.yaml    key_id                network-config.toml  node_address         txs
 ```
 
 ### 增加节点
@@ -127,10 +121,11 @@ args: Namespace(subcmd='increase', work_dir='/tmp/test', chain_name='test-chain'
 will add node 3, new peers_count is 4
 peers: [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-3.test-chain-headless-service', 'port': 40000}]
 net_config_list: [{'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-3.test-chain-headless-service', 'port': 40000}]}, {'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-3.test-chain-headless-service', 'port': 40000}]}, {'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-3.test-chain-headless-service', 'port': 40000}]}, {'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}]}]
-new device_id: IF6EGT5-SMR63BU-LTCIIDV-PBV7DL7-CQJC526-5CRCXZW-YWP4NM7-NIRIAQS
-sync_peers: [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40001, 'device_id': 'TMBPDQG-O7UU4NO-HN4E5IV-NDDGTWT-UYCNNAM-4XQFXPS-FEH2JPS-JLFN4AR'}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40001, 'device_id': 'JE3YFPS-5GMICM5-SMTVQGQ-4QRIWYT-IJSBYEC-SO35Z33-JG67YAB-5BSP3AO'}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40001, 'device_id': 'FWZFBXZ-KH4LGY7-MRILEIY-UTS4SDC-JSFESOI-XLBBMKQ-K74NG7K-JXQHBA7'}, {'ip': 'test-chain-3.test-chain-headless-service', 'port': 40001, 'device_id': 'IF6EGT5-SMR63BU-LTCIIDV-PBV7DL7-CQJC526-5CRCXZW-YWP4NM7-NIRIAQS'}]
-kms create output: key_id:1,address:0x840d11eb869558040d4931ae075c65d458c4c834
-new node address 0x840d11eb869558040d4931ae075c65d458c4c834
+old kms_passwords:  ['123456', '123456', '123456', '123456']
+use unique kms_password
+new kms_password:  123456
+kms create output: key_id:1,address:0x68cd3f09225a72db535b271841b684a5b3cf98be
+new node address 0x68cd3f09225a72db535b271841b684a5b3cf98be
 Done!!!
 ```
 
@@ -138,15 +133,15 @@ Done!!!
 
 ```
 $ ls
-test-chain  test-chain-0  test-chain-1  test-chain-2  test-chain-3  test-chain.config  test-chain.lock
+test-chain  test-chain-0  test-chain-1  test-chain-2  test-chain-3  test-chain.config
 ```
 多了节点文件夹`test-chain-3`。
 
 ```
 $ ls test-chain-3 
-config                 controller-config.toml  genesis.toml          kms.db               network_key          storage-log4rs.yaml
+blocks                 controller-config.toml  genesis.toml          kms.db               network_key          storage-log4rs.yaml
 consensus-config.toml  controller-log4rs.yaml  init_sys_config.toml  kms-log4rs.yaml      network-log4rs.yaml  tx_infos
-consensus-log4rs.yaml  executor-log4rs.yaml    key_id                network-config.toml  node_address
+consensus-log4rs.yaml  executor-log4rs.yaml    key_id                network-config.toml  node_address         txs
 ```
 
 ### 减少节点
@@ -170,7 +165,6 @@ args: Namespace(subcmd='decrease', work_dir='/tmp/test', chain_name='test-chain'
 will delete node 3, new peers_count is 3
 peers: [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}]
 net_config_list: [{'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}]}, {'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40000}]}, {'enable_tls': True, 'port': 40000, 'peers': [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40000}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40000}]}]
-sync_peers: [{'ip': 'test-chain-0.test-chain-headless-service', 'port': 40001, 'device_id': 'TMBPDQG-O7UU4NO-HN4E5IV-NDDGTWT-UYCNNAM-4XQFXPS-FEH2JPS-JLFN4AR'}, {'ip': 'test-chain-1.test-chain-headless-service', 'port': 40001, 'device_id': 'JE3YFPS-5GMICM5-SMTVQGQ-4QRIWYT-IJSBYEC-SO35Z33-JG67YAB-5BSP3AO'}, {'ip': 'test-chain-2.test-chain-headless-service', 'port': 40001, 'device_id': 'FWZFBXZ-KH4LGY7-MRILEIY-UTS4SDC-JSFESOI-XLBBMKQ-K74NG7K-JXQHBA7'}]
 Done!!!
 ```
 
@@ -178,7 +172,7 @@ Done!!!
 
 ```
 $ ls
-test-chain  test-chain-0  test-chain-1  test-chain-2  test-chain.config  test-chain.lock
+test-chain  test-chain-0  test-chain-1  test-chain-2  test-chain.config
 ```
 
 少了节点文件夹`test-chain-3`。

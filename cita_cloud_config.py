@@ -9,12 +9,10 @@ import toml
 import subprocess
 import time
 import copy
-import xml.etree.ElementTree as ET
 import hashlib
 from pysmx.SM2 import generate_keypair
 from pysmx.SM3 import hash_msg
 import shutil
-import re
 from random import choice
 import string
 import pickle
@@ -25,7 +23,6 @@ DEFAULT_BLOCK_INTERVAL = 6
 
 SYNC_FOLDERS = [
     'blocks',
-    'proposals',
     'txs'
 ]
 
@@ -45,7 +42,6 @@ class ChainConfig:
     chain_name = 'test-chain'
     peers_count = 3
     peers = []
-    sync_peers = []
     super_admin = ''
     kms_passwords = []
     enable_tls = True
@@ -448,90 +444,6 @@ def gen_init_sysconfig(work_dir, chain_name, super_admin, authorities, peers_cou
             toml.dump(init_sys_config, stream)
 
 
-def gen_sync_account(chain_path):
-    sync_config_path = os.path.join(chain_path, 'sync_config')
-    cmd = 'syncthing -generate={}'.format(sync_config_path)
-    syncthing_gen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    mark_str = 'Device ID: '
-    device_id_len = 63
-    output = str(syncthing_gen.stdout.read())
-    mark_index = output.index(mark_str)
-    device_id = output[mark_index + len(mark_str):mark_index + len(mark_str) + device_id_len]
-
-    target_dir = os.path.join(chain_path, device_id)
-
-    shutil.move(sync_config_path, target_dir)
-
-    config_path = os.path.join(target_dir, 'config.xml')
-    os.remove(config_path)
-
-    return device_id
-
-
-# generate sync peers info by pod name
-def gen_sync_peers(work_dir, peers, chain_name):
-    chain_path = os.path.join(work_dir, chain_name)
-    sync_peers = []
-    for peer in peers:
-        device_id = gen_sync_account(chain_path)
-        print("device_id:", device_id)
-        sync_peer = {
-            'ip': peer['ip'],
-            'port': peer['port'] + 1,
-            'device_id': device_id
-        }
-        sync_peers.append(sync_peer)
-    return sync_peers
-
-
-def gen_sync_configs(work_dir, sync_peers, chain_name):
-    for i in range(len(sync_peers)):
-        config_example = ET.parse(os.path.join(os.curdir, 'config.xml'))
-        root = config_example.getroot()
-        # add device for all folder
-        for elem in root.findall('folder'):
-            for peer in sync_peers:
-                d = ET.SubElement(elem, 'device')
-                d.set('id', peer['device_id'])
-                d.set('introducedBy', '')
-        # add all device
-        for peer in sync_peers:
-            d = ET.SubElement(root, 'device')
-            d.set('id', peer['device_id'])
-            d.set('name', peer['ip'])
-            d.set('compression', 'always')
-            d.set('introducer', 'false')
-            d.set('skipIntroductionRemovals', 'false')
-            d.set('introducedBy', '')
-            address = ET.SubElement(d, 'address')
-            address.text = 'tcp://{}:{}'.format(peer['ip'], peer['port'])
-            paused = ET.SubElement(d, 'paused')
-            paused.text = 'false'
-            autoAcceptFolders = ET.SubElement(d, 'autoAcceptFolders')
-            autoAcceptFolders.text = 'false'
-            maxSendKbps = ET.SubElement(d, 'maxSendKbps')
-            maxSendKbps.text = '0'
-            maxRecvKbps = ET.SubElement(d, 'maxRecvKbps')
-            maxRecvKbps.text = '0'
-            maxRequestKiB = ET.SubElement(d, 'maxRequestKiB')
-            maxRequestKiB.text = '0'
-        # add gui/apikey
-        gui = root.findall('gui')[0]
-        apikey = ET.SubElement(gui, 'apikey')
-        apikey.text = chain_name
-
-        node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, chain_name)))
-        path = os.path.join(node_path, 'config')
-        need_directory(path)
-
-        config_example.write(os.path.join(path, 'config.xml'))
-
-        chain_path = os.path.join(work_dir, chain_name)
-        account_dir = os.path.join(chain_path, sync_peers[i]['device_id'])
-        shutil.copy(os.path.join(account_dir, 'cert.pem'), path)
-        shutil.copy(os.path.join(account_dir, 'key.pem'), path)
-
-
 def run_subcmd_init(args, work_dir):
     config_file = os.path.join(work_dir, '{}.config'.format(args.chain_name))
     if os.path.exists(config_file):
@@ -573,6 +485,9 @@ def run_subcmd_init(args, work_dir):
         need_directory(node_path)
         tx_infos_path = os.path.join(node_path, 'tx_infos')
         need_directory(tx_infos_path)
+        for dir in SYNC_FOLDERS:
+            path = os.path.join(node_path, dir)
+            need_directory(path)
         # generate network config file
         net_config_file = os.path.join(node_path, 'network-config.toml')
         with open(net_config_file, 'wt') as stream:
@@ -616,15 +531,6 @@ def run_subcmd_init(args, work_dir):
     gen_init_sysconfig(work_dir, args.chain_name, super_admin, authorities, args.peers_count)
 
     chain_config.is_bft = args.is_bft
-
-    # generate syncthing config
-    if not args.nodes:
-        for peer in peers:
-            peer['port'] = 22000 - 1
-    sync_peers = gen_sync_peers(work_dir, peers, args.chain_name)
-    print("sync_peers:", sync_peers)
-    gen_sync_configs(work_dir, sync_peers, args.chain_name)
-    chain_config.sync_peers = sync_peers
 
     with open(config_file, 'wb') as f:
         pickle.dump(chain_config, f)
@@ -673,28 +579,6 @@ def run_subcmd_increase(args, work_dir):
         # generate network key
         gen_network_key(node_path)
 
-    # regenerate syncthing config
-    sync_peers = chain_config.sync_peers
-    chain_path = os.path.join(work_dir, args.chain_name)
-    device_id = gen_sync_account(chain_path)
-    print("new device_id:", device_id)
-    if args.node:
-        sync_peer = {
-            'ip': peers[-1]['ip'],
-            'port': peers[-1]['port'] + 1,
-            'device_id': device_id
-        }
-    else:
-        sync_peer = {
-            'ip': peers[-1]['ip'],
-            'port': 22000,
-            'device_id': device_id
-        }
-    sync_peers.append(sync_peer)
-    print("sync_peers:", sync_peers)
-    chain_config.sync_peers = sync_peers
-    gen_sync_configs(work_dir, sync_peers, args.chain_name)
-
     source_node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(0, args.chain_name)))
     new_node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(new_peer_no, args.chain_name)))
 
@@ -703,6 +587,9 @@ def run_subcmd_increase(args, work_dir):
 
     tx_infos_path = os.path.join(new_node_path, 'tx_infos')
     need_directory(tx_infos_path)
+    for dir in SYNC_FOLDERS:
+        path = os.path.join(node_path, dir)
+        need_directory(path)
 
     # copy log config
     for service_name in SERVICE_LIST:
@@ -784,13 +671,6 @@ def run_subcmd_decrease(args, work_dir):
             toml.dump(net_config, stream)
         # generate network key
         gen_network_key(node_path)
-
-    # regenerate syncthing config
-    sync_peers = chain_config.sync_peers
-    sync_peers.pop()
-    print("sync_peers:", sync_peers)
-    chain_config.sync_peers = sync_peers
-    gen_sync_configs(work_dir, sync_peers, args.chain_name)
 
     last_node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(last_peer_no, args.chain_name)))
     shutil.rmtree(last_node_path)
