@@ -19,7 +19,7 @@ import pickle
 
 DEFAULT_PREVHASH = '0x{:064x}'.format(0)
 
-DEFAULT_BLOCK_INTERVAL = 6
+DEFAULT_BLOCK_INTERVAL = 3
 
 SYNC_FOLDERS = [
     'blocks',
