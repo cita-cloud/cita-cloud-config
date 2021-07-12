@@ -462,8 +462,6 @@ def run_subcmd_local_cluster(args):
             num = num + index * 1000
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
         need_directory(node_path)
-        tx_infos_path = os.path.join(node_path, 'tx_infos')
-        need_directory(tx_infos_path)
         # generate network config file
         net_config_file = os.path.join(node_path, 'network-config.toml')
         with open(net_config_file, 'wt') as stream:
