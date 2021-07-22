@@ -21,11 +21,6 @@ DEFAULT_PREVHASH = '0x{:064x}'.format(0)
 
 DEFAULT_BLOCK_INTERVAL = 3
 
-SYNC_FOLDERS = [
-    'blocks',
-    'txs'
-]
-
 SERVICE_LIST = [
     'network',
     'consensus',
@@ -52,7 +47,7 @@ class ChainConfig:
         self.work_dir = work_dir
 
 
-def gen_password(length=8,chars=string.ascii_letters+string.digits):
+def gen_password(length=8, chars=string.ascii_letters + string.digits):
     return ''.join([choice(chars) for i in range(length)])
 
 
@@ -135,6 +130,12 @@ def parse_arguments():
         default=False,
         help='Is bft')
 
+    pInit.add_argument(
+        '--is_local',
+        type=str_to_bool,
+        default=False,
+        help='Is running in local machine')
+
     #
     # Subcommand: increase
     #
@@ -154,6 +155,12 @@ def parse_arguments():
     pIncrease.add_argument(
         '--node', help='Node network addr to add')
 
+    pIncrease.add_argument(
+        '--is_local',
+        type=str_to_bool,
+        default=False,
+        help='Is running in local machine')
+
     #
     # Subcommand: decrease
     #
@@ -166,6 +173,12 @@ def parse_arguments():
 
     pDecrease.add_argument(
         '--chain_name', default='test-chain', help='The name of chain.')
+
+    pDecrease.add_argument(
+        '--is_local',
+        type=str_to_bool,
+        default=False,
+        help='Is running in local machine')
 
     #
     # Subcommand: clean
@@ -192,17 +205,25 @@ def get_node_pod_name(index, chain_name):
 def get_headless_svc_name(chain_name):
     return '{}-headless-service'.format(chain_name)
 
+
 def get_node_network_name(index, chain_name):
     return '{}.{}'.format(get_node_pod_name(index, chain_name), get_headless_svc_name(chain_name))
 
+
 # generate peers info by pod name
-def gen_peers(count, chain_name):
+def gen_peers(count, chain_name, is_local):
     peers = []
     for i in range(count):
-        peer = {
-            'ip': get_node_network_name(i, chain_name),
-            'port': 40000
-        }
+        if not is_local:
+            peer = {
+                'ip': get_node_network_name(i, chain_name),
+                'port': 40000
+            }
+        else:
+            peer = {
+                'ip': "127.0.0.1",
+                'port': 40000 + i
+            }
         peers.append(peer)
     return peers
 
@@ -221,16 +242,23 @@ def gen_peers_by_nodes(nodes):
     return peers
 
 
-def gen_net_config_list(peers, enable_tls):
+def gen_net_config_list(peers, enable_tls, is_local):
     net_config_list = []
-    for peer in peers:
+    for index, peer in enumerate(peers):
         peers_clone = copy.deepcopy(peers)
         peers_clone.remove(peer)
-        net_config = {
-            'enable_tls': enable_tls,
-            'port': 40000,
-            'peers': peers_clone
-        }
+        if not is_local:
+            net_config = {
+                'enable_tls': enable_tls,
+                'port': 40000,
+                'peers': peers_clone
+            }
+        else:
+            net_config = {
+                'enable_tls': enable_tls,
+                'port': 40000 + index,
+                'peers': peers_clone
+            }
         net_config_list.append(net_config)
     return net_config_list
 
@@ -249,7 +277,7 @@ def need_directory(path):
 
 
 def gen_chainid(chain_name):
-    return '0x'+hashlib.sha256(chain_name.encode()).hexdigest()
+    return '0x' + hashlib.sha256(chain_name.encode()).hexdigest()
 
 
 LOG_CONFIG_TEMPLATE = '''# Scan this file for changes every 30 seconds
@@ -297,33 +325,42 @@ def gen_log4rs_config(node_path, log_level, is_stdout):
             stream.write(LOG_CONFIG_TEMPLATE.format(service_name, log_level, appender))
 
 
-CONSENSUS_CONFIG_TEMPLATE = '''network_port = 50000
-controller_port = 50004
+CONSENSUS_CONFIG_TEMPLATE = '''network_port = {}
+controller_port = {}
 node_id = {}
 '''
 
 
 # generate consensus-config.toml
-def gen_consensus_config(node_path, i):
+def gen_consensus_config(node_path, i, num):
     path = os.path.join(node_path, 'consensus-config.toml')
     with open(path, 'wt') as stream:
-        stream.write(CONSENSUS_CONFIG_TEMPLATE.format(i))
+        stream.write(CONSENSUS_CONFIG_TEMPLATE.format(
+            num,
+            num + 4,
+            i))
 
 
-CONTROLLER_CONFIG_TEMPLATE = '''network_port = 50000
-consensus_port = 50001
-storage_port = 50003
-kms_port = 50005
-executor_port = 50002
+CONTROLLER_CONFIG_TEMPLATE = '''network_port = {}
+consensus_port = {}
+storage_port = {}
+kms_port = {}
+executor_port = {}
 block_delay_number = {}
 '''
 
 
 # generate controller-config.toml
-def gen_controller_config(node_path, block_delay_number):
+def gen_controller_config(node_path, block_delay_number, num):
     path = os.path.join(node_path, 'controller-config.toml')
     with open(path, 'wt') as stream:
-        stream.write(CONTROLLER_CONFIG_TEMPLATE.format(block_delay_number))
+        stream.write(CONTROLLER_CONFIG_TEMPLATE.format(
+            num,
+            num + 1,
+            num + 3,
+            num + 5,
+            num + 2,
+            block_delay_number))
 
 
 GENESIS_TEMPLATE = '''timestamp = {}
@@ -376,12 +413,16 @@ def gen_super_admin(work_dir, chain_name, kms_password):
     return super_admin
 
 
-def gen_sm2_account(node_path):
+def gen_sm2_account(node_path, is_local, kms_password):
+    if is_local:
+        path = os.path.join(node_path, 'key_file')
+        with open(path, 'wt') as stream:
+            stream.write(kms_password)
     pk, sk = generate_keypair()
-    addr = '0x'+hash_msg(pk)[24:]
+    addr = '0x' + hash_msg(pk)[24:]
     path = os.path.join(node_path, 'node_key')
     with open(path, 'wt') as stream:
-        stream.write('0x'+sk.hex())
+        stream.write('0x' + sk.hex())
     path = os.path.join(node_path, 'node_address')
     with open(path, 'wt') as stream:
         stream.write(addr)
@@ -391,11 +432,11 @@ def gen_sm2_account(node_path):
     return addr
 
 
-def gen_sm2_authorities(work_dir, chain_name, peers_count):
+def gen_sm2_authorities(work_dir, chain_name, peers_count, is_local, kms_passwords):
     authorities = []
     for i in range(peers_count):
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(i, chain_name)))
-        addr = gen_sm2_account(node_path)
+        addr = gen_sm2_account(node_path, is_local, kms_passwords[i + 1])
         authorities.append(addr)
     return authorities
 
@@ -432,7 +473,7 @@ validators = [\"0x010928818c840630a60b4fda06848cac541599462f\"]
 def gen_init_sysconfig(work_dir, chain_name, super_admin, authorities, peers_count):
     init_sys_config = toml.loads(INIT_SYSCONFIG_TEMPLATE)
     init_sys_config['block_interval'] = DEFAULT_BLOCK_INTERVAL
-    init_sys_config['validators'] = authorities    
+    init_sys_config['validators'] = authorities
     init_sys_config['admin'] = super_admin
     init_sys_config['chain_id'] = gen_chainid(chain_name)
 
@@ -462,14 +503,14 @@ def run_subcmd_init(args, work_dir):
         args.peers_count = len(peers)
     else:
         # else generate peers info by pod name
-        peers = gen_peers(args.peers_count, args.chain_name)
+        peers = gen_peers(args.peers_count, args.chain_name, args.is_local)
     print("peers:", peers)
 
     chain_config.peers = peers
     chain_config.peers_count = args.peers_count
 
     # generate network config for all peers
-    net_config_list = gen_net_config_list(peers, args.enable_tls)
+    net_config_list = gen_net_config_list(peers, args.enable_tls, args.is_local)
     print("net_config_list:", net_config_list)
 
     chain_config.enable_tls = args.enable_tls
@@ -481,13 +522,11 @@ def run_subcmd_init(args, work_dir):
         timestamp = args.timestamp
     chain_config.timestamp = timestamp
     for index, net_config in enumerate(net_config_list):
+        num = 50000
+        if args.is_local:
+            num = num + index * 1000
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
         need_directory(node_path)
-        tx_infos_path = os.path.join(node_path, 'tx_infos')
-        need_directory(tx_infos_path)
-        for dir in SYNC_FOLDERS:
-            path = os.path.join(node_path, dir)
-            need_directory(path)
         # generate network config file
         net_config_file = os.path.join(node_path, 'network-config.toml')
         with open(net_config_file, 'wt') as stream:
@@ -496,8 +535,8 @@ def run_subcmd_init(args, work_dir):
         gen_network_key(node_path)
         # generate log config
         gen_log4rs_config(node_path, args.log_level, args.is_stdout)
-        gen_consensus_config(node_path, index)
-        gen_controller_config(node_path, args.block_delay_number)
+        gen_consensus_config(node_path, index, num)
+        gen_controller_config(node_path, args.block_delay_number, num)
         # generate genesis
         gen_genesis(node_path, timestamp, DEFAULT_PREVHASH)
 
@@ -525,7 +564,7 @@ def run_subcmd_init(args, work_dir):
     chain_config.super_admin = super_admin
 
     if args.is_bft:
-        authorities = gen_sm2_authorities(work_dir, args.chain_name, args.peers_count)
+        authorities = gen_sm2_authorities(work_dir, args.chain_name, args.peers_count, args.is_local, kms_passwords)
     else:
         authorities = gen_authorities(work_dir, args.chain_name, kms_passwords, args.peers_count)
     gen_init_sysconfig(work_dir, args.chain_name, super_admin, authorities, args.peers_count)
@@ -562,12 +601,12 @@ def run_subcmd_increase(args, work_dir):
         peers.append(peer)
     else:
         # regenerate peers info by pod name
-        peers = gen_peers(new_peers_count, args.chain_name)
+        peers = gen_peers(new_peers_count, args.chain_name, args.is_local)
     print("peers:", peers)
     chain_config.peers = peers
 
     # regenerate network config for all peers
-    net_config_list = gen_net_config_list(peers, chain_config.enable_tls)
+    net_config_list = gen_net_config_list(peers, chain_config.enable_tls, args.is_local)
     print("net_config_list:", net_config_list)
     for index, net_config in enumerate(net_config_list):
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
@@ -585,21 +624,15 @@ def run_subcmd_increase(args, work_dir):
     # generate network key
     gen_network_key(new_node_path)
 
-    tx_infos_path = os.path.join(new_node_path, 'tx_infos')
-    need_directory(tx_infos_path)
-    for dir in SYNC_FOLDERS:
-        path = os.path.join(node_path, dir)
-        need_directory(path)
-
     # copy log config
     for service_name in SERVICE_LIST:
         shutil.copy(os.path.join(source_node_path, '{}-log4rs.yaml'.format(service_name)), new_node_path)
 
-    # copy consensus config
-    shutil.copy(os.path.join(source_node_path, 'consensus-config.toml'), new_node_path)
-
-    # copy controller config
-    shutil.copy(os.path.join(source_node_path, 'controller-config.toml'), new_node_path)
+    num = 50000
+    if args.is_local:
+        num = num + peers_count * 1000
+    gen_consensus_config(new_node_path, peers_count, num)
+    gen_controller_config(new_node_path, 0, num)
 
     # copy genesis
     shutil.copy(os.path.join(source_node_path, 'genesis.toml'), new_node_path)
@@ -622,7 +655,7 @@ def run_subcmd_increase(args, work_dir):
     chain_config.kms_passwords.append(kms_password)
 
     if chain_config.is_bft:
-        address = gen_sm2_account(new_node_path)
+        address = gen_sm2_account(new_node_path, args.is_local, kms_password)
     else:
         current_dir = os.path.abspath(os.curdir)
         path = os.path.join(current_dir, 'key_file')
@@ -660,7 +693,7 @@ def run_subcmd_decrease(args, work_dir):
     chain_config.peers = peers
 
     # regenerate network config for all peers
-    net_config_list = gen_net_config_list(peers, chain_config.enable_tls)
+    net_config_list = gen_net_config_list(peers, chain_config.enable_tls, args.is_local)
     print("net_config_list:", net_config_list)
     for index, net_config in enumerate(net_config_list):
         node_path = os.path.join(work_dir, '{}'.format(get_node_pod_name(index, args.chain_name)))
@@ -708,6 +741,8 @@ def run_subcmd_clean(args, work_dir):
 
 def main():
     args = parse_arguments()
+    if args.is_local:
+        args.work_dir = "./tmp"
     print("args:", args)
     funcs_router = {
         SUBCMD_INIT: run_subcmd_init,

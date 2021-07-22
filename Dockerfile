@@ -1,6 +1,6 @@
 FROM python:slim-buster
 WORKDIR /cita_cloud_config
-COPY --from=citacloud/kms_sm:latest /usr/bin/kms /usr/bin/
+COPY --from=citacloud/kms_sm:v6.0.0 /usr/bin/kms /usr/bin/
 RUN /bin/sh -c set -eux;\
     apt-get update;\
     apt-get install -y --no-install-recommends libsqlite3-0;\
