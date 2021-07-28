@@ -256,7 +256,7 @@ def gen_net_config_list(peers, enable_tls, is_local):
         else:
             net_config = {
                 'enable_tls': enable_tls,
-                'port': 40000 + index,
+                'port': peer['port'],
                 'peers': peers_clone
             }
         net_config_list.append(net_config)
